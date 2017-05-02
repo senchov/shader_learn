@@ -1,0 +1,4 @@
+sceneSetups:
+- path: Assets/Shader/portal/port.unity
+  isLoaded: 1
+  isActive: 1
