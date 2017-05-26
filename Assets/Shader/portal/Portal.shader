@@ -73,13 +73,11 @@ Shader "L_SHADERS/Portals"
 				float2 scaleTex = i.texcoord2  / _Tween;
 				float4 alphaTex = tex2D(_FirstAlphaTexture, scaleTex);
 				float4 alphaTex2 = tex2D(_SecondAlphaTexture, scaleTex);
-				float alphatmp = alphaTex.r + alphaTex2.r;
-//				if (alphatmp > 1)
-//					alphatmp = 1;
-				alphatmp = clamp (alphatmp, 0 , 1);
-				float alpha = 1 - alphatmp;
+				float alphatmp = alphaTex.r * alphaTex2.r ;
 
-				col = float4 (col.r, col.g, col.b, alpha);
+				alphatmp = clamp (alphatmp, 0 , 1);
+
+				col = float4 (col.r, col.g, col.b, alphatmp);
 				return col;
 			}
 			
