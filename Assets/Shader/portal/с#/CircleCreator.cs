@@ -13,6 +13,7 @@ public class CircleCreator : MonoBehaviour
 	[SerializeField] private bool IsFluct = false;
 	[SerializeField] private int FluctIndex;
 	[SerializeField] private Material DefaultMat;
+	[SerializeField] private UVSettings UV;
 
 	private float FluctRange;
 
@@ -26,23 +27,27 @@ public class CircleCreator : MonoBehaviour
 	int FirstIndex = 0;
 	int SecondIndex = 1;
 	private int Dir = 1;
+	private float UVbaseX;
+	private float UVbaseY;
 
 	private void Start () 
 	{
 		MakeCircle ();
 
+		UVbaseX = UV.RightTop.x - UV.LeftBottom.x;
+		UVbaseY = UV.RightTop.y - UV.LeftBottom.y;
+
 		float fluctFrame = 0;
 		float angle = 0;
-		List<Vector2> uvList = new List<Vector2> ();
-		uvList.Add (Vector2.zero);
+
 		for (int i = 0; i < FluctSegments.Length; i++)
 		{
 			List<float> radiusList = new List<float> ();
 			for (int j = 0; j < ObjList.Count; j++)
 			{
-				if (i == 0)
-					radiusList.Add (FluctSegments [i].GetFluctValue (i,ref fluctFrame,ref uvList));
-				else
+//				if (i == 0)
+//					radiusList.Add (FluctSegments [i].GetFluctValue (i,ref fluctFrame,ref uvList));
+//				else
 					radiusList.Add (FluctSegments [i].GetFluctValue (i,ref fluctFrame));
 			}
 			RadiusLists.Add (radiusList);
@@ -56,16 +61,25 @@ public class CircleCreator : MonoBehaviour
 
 		Mesh m = new Mesh ();
 		List <Vector3> vect = new List<Vector3> ();
+		List<Vector2> uvList = new List<Vector2> ();
 
 		vect.Add (Vector3.zero);
+		uvList.Add (GetUVCoord (vect[0]));
 
 		for (int i = 0; i < ObjList.Count; i++)
 		{			
 			float radius =Volume * (RadiusLists [FirstIndex] [i] + Radius);
 
 			vect.Add (new Vector3 (GetX (angle,radius), GetY (angle,radius), 0));
+			uvList.Add (GetUVCoord (vect[i]));
 			angle += StepAngle;
 		}
+
+		print (uvList[uvList.Count-3] + "  "+
+			uvList[uvList.Count-2] + "  " +
+			uvList[uvList.Count-1] + "  ");
+		
+			//uvList[uvList.Count-3] + "  ");
 
 		m.SetVertices (vect);
 		filter.mesh = m;
@@ -188,9 +202,21 @@ public class CircleCreator : MonoBehaviour
 		}
 	}
 
+	private List <Vector2> GetUVPoints (List <Vector3> vert)  
+	{
+		List <Vector2> uvList = new List<Vector2> ();
+		return uvList;		
+	} 
+
+	private Vector2 GetUVCoord (Vector3 vertix) 
+	{
+		return new Vector2((vertix.x - UV.LeftBottom.x)/UVbaseX,(vertix.y - UV.LeftBottom.y)/UVbaseY);
+	}
+
 	[System.Serializable]
 	private class FluctateSettings 
 	{
+		
 		public int Start;
 		public int End;
 		public AnimationCurve FluctCurve;
@@ -229,10 +255,14 @@ public class CircleCreator : MonoBehaviour
 			}
 
 			return value;
-		} 
+		}
+	}
 
-
-
+	[System.Serializable]
+	private class UVSettings 
+	{
+		public Vector2 LeftBottom;
+		public Vector2 RightTop;
 	}
 
 }
