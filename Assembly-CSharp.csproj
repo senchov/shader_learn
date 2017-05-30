@@ -110,6 +110,7 @@
      <None Include="Assets\tk2dShaders\goodies\PackedTextMesh.shader" />
      <None Include="Assets\tk2dShaders\Blend2TexVertexColor.shader" />
      <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Surface-Mobile.shader" />
+     <None Include="Assets\Shader\portal\Portal3.shader" />
      <None Include="Assets\Shader\bareBone.shader" />
      <None Include="Assets\Demigiant\DOTween\DOTween46.xml" />
      <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF Overlay.shader" />
@@ -131,6 +132,7 @@
      <None Include="Assets\PeerPlay\Ripple Water\_shaders\RippleWater.shader" />
      <None Include="Assets\tk2dShaders\LitBlendVertexColor.shader" />
      <None Include="Assets\Gems\Gem\Shaders\Gem.shader" />
+     <None Include="Assets\Shader\moveLine\MoveLine.shader" />
      <None Include="Assets\tk2dShaders\AdditiveVertexColor.shader" />
      <None Include="Assets\Demigiant\DOTween\DOTween43.xml" />
  <Reference Include="UnityEngine.UI">

@@ -19,7 +19,7 @@ public class CircleCreator : MonoBehaviour
 
 	float StepAngle = 0;
 
-	private List <GameObject> ObjList = new List<GameObject> ();
+    private List <Vector3> ObjList = new List<Vector3> ();
 
 	private List<List<float>> RadiusLists = new List<List<float>> ();
 	bool IsChangeFirst = false;
@@ -30,10 +30,63 @@ public class CircleCreator : MonoBehaviour
 	private float UVbaseX;
 	private float UVbaseY;
 
+	Mesh SpotMark;
+	List <Vector3> Vect = new List<Vector3> ();
+	List<Vector2> UVList = new List<Vector2> ();
+
 	private void Start () 
 	{
 		MakeCircle ();
+		CreatePortal ();
+	}
 
+	private void FixedUpdate () 
+	{
+		if (!IsFluct)
+			return;
+		
+		float angle = 0;
+		float fluctFrame = 0;
+		for (int i = 0; i < ObjList.Count; i++)
+		{			
+			float radius =Volume * (RadiusLists [FirstIndex] [i]* (1 - FluctRange) + RadiusLists [SecondIndex][i]* FluctRange + Radius);
+
+			//ObjList [i].transform.localPosition = new Vector3 (GetX (angle,radius), GetY (angle,radius), 0);
+			Vect [i+1] = new Vector3 (GetX (angle,radius), GetY (angle,radius), 0);
+			UVList [i + 1] = GetUVCoord (Vect [i+1]);
+			angle += StepAngle;
+		}
+
+		SpotMark.SetVertices (Vect);
+		SpotMark.SetUVs (1,UVList);
+
+		if ( IsChangeSecond && FluctRange > 0.99f) 
+		{
+//			FirstIndex += 2;
+//			FirstIndex = (FirstIndex >=RadiusLists.Count-1) ? 0 : FirstIndex;
+			//FluctSegments
+
+			FirstIndex =GetAvailebleIndex ();
+			IsChangeFirst = true;
+			IsChangeSecond = false;
+			Dir = -1;
+		}
+
+		if (IsChangeFirst && FluctRange < 0.01f ) 
+		{
+//			SecondIndex += 2;
+//			SecondIndex = (SecondIndex >=RadiusLists.Count-1) ? 1 : SecondIndex;
+			SecondIndex =GetAvailebleIndex ();
+			IsChangeSecond = true;
+			IsChangeFirst = false;
+			Dir = 1;
+		}
+		FluctRange += Time.deltaTime * FluctSpeed  * Dir;
+
+	}
+
+	private void CreatePortal () 
+	{
 		UVbaseX = UV.RightTop.x - UV.LeftBottom.x;
 		UVbaseY = UV.RightTop.y - UV.LeftBottom.y;
 
@@ -45,10 +98,7 @@ public class CircleCreator : MonoBehaviour
 			List<float> radiusList = new List<float> ();
 			for (int j = 0; j < ObjList.Count; j++)
 			{
-//				if (i == 0)
-//					radiusList.Add (FluctSegments [i].GetFluctValue (i,ref fluctFrame,ref uvList));
-//				else
-					radiusList.Add (FluctSegments [i].GetFluctValue (i,ref fluctFrame));
+				radiusList.Add (FluctSegments [i].GetFluctValue (i,ref fluctFrame));
 			}
 			RadiusLists.Add (radiusList);
 		}
@@ -59,35 +109,27 @@ public class CircleCreator : MonoBehaviour
 		MeshRenderer rend = o.AddComponent <MeshRenderer>() as MeshRenderer;
 		rend.material = DefaultMat;
 
-		Mesh m = new Mesh ();
-		List <Vector3> vect = new List<Vector3> ();
-		List<Vector2> uvList = new List<Vector2> ();
+		SpotMark = new Mesh ();
 
-		vect.Add (Vector3.zero);
-		uvList.Add (GetUVCoord (vect[0]));
+
+		Vect.Add (Vector3.zero);
+		UVList.Add (GetUVCoord (Vect[0]));
 
 		for (int i = 0; i < ObjList.Count; i++)
 		{			
 			float radius =Volume * (RadiusLists [FirstIndex] [i] + Radius);
 
-			vect.Add (new Vector3 (GetX (angle,radius), GetY (angle,radius), 0));
-			uvList.Add (GetUVCoord (vect[i]));
+			Vect.Add (new Vector3 (GetX (angle,radius), GetY (angle,radius), 0));
+			UVList.Add (GetUVCoord (Vect[i+1]));
 			angle += StepAngle;
 		}
 
-		print (uvList[uvList.Count-3] + "  "+
-			uvList[uvList.Count-2] + "  " +
-			uvList[uvList.Count-1] + "  ");
-		
-			//uvList[uvList.Count-3] + "  ");
+		SpotMark.SetVertices (Vect);
+		filter.mesh = SpotMark;
 
-		m.SetVertices (vect);
-		filter.mesh = m;
-
-		m.SetUVs (0,uvList);
+		SpotMark.SetUVs (0,UVList);
 
 		int[] triangles = new int[ObjList.Count * 3];
-		//triangles [0] = 0;
 		int firstPoint = 1;
 		int secondPoint = 2;
 
@@ -95,7 +137,7 @@ public class CircleCreator : MonoBehaviour
 		{
 			if (i % 3 == 0)
 				triangles [i] = 0;
-			
+
 			if ((i-1) % 3 == 0)
 			{
 				triangles [i] = firstPoint;
@@ -111,48 +153,13 @@ public class CircleCreator : MonoBehaviour
 		triangles[triangles.Length-3] = 0;
 		triangles[triangles.Length-2] = secondPoint-1;
 		triangles[triangles.Length-1] = 1;
-		print ("v->" + vect.Count + " uv->" + uvList.Count + " tr->" + triangles.Length);
-		m.triangles = triangles;	
-		m.RecalculateBounds ();
-		m.RecalculateNormals ();
 
+		SpotMark.triangles = triangles;	
+		SpotMark.RecalculateBounds ();
+		SpotMark.RecalculateNormals ();
 	}
 
-	private void FixedUpdate () 
-	{
-		if (!IsFluct)
-			return;
-		
-		float angle = 0;
-		float fluctFrame = 0;
-		for (int i = 0; i < ObjList.Count; i++)
-		{			
-			float radius =Volume * (RadiusLists [FirstIndex] [i]* (1 - FluctRange) + RadiusLists [SecondIndex][i]* FluctRange + Radius);
 
-			ObjList [i].transform.localPosition = new Vector3 (GetX (angle,radius), GetY (angle,radius), 0);
-			angle += StepAngle;
-		}
-		//print (FluctRange + " s-> " + IsChangeSecond + " f->" + IsChangeFirst);
-		if ( IsChangeSecond && FluctRange > 0.99f) 
-		{
-			FirstIndex += 2;
-			FirstIndex = (FirstIndex >=RadiusLists.Count-1) ? 0 : FirstIndex;
-			IsChangeFirst = true;
-			IsChangeSecond = false;
-			Dir = -1;
-		}
-
-		if (IsChangeFirst && FluctRange < 0.01f ) 
-		{
-			SecondIndex += 2;
-			SecondIndex = (SecondIndex >=RadiusLists.Count-1) ? 1 : SecondIndex;
-			IsChangeSecond = true;
-			IsChangeFirst = false;
-			Dir = 1;
-		}
-		FluctRange += Time.deltaTime * FluctSpeed  * Dir;
-
-	}
 
 
 	[ContextMenu ("MakeCircle")]
@@ -162,7 +169,7 @@ public class CircleCreator : MonoBehaviour
 		float angle = 0;
 		for (int i = 0; i < SegmentAmount; i++) 
 		{			
-			ObjList.Add (GetObj (0 , 0));
+            ObjList.Add (Vector3.zero);
 		}
 	}
 
@@ -188,28 +195,35 @@ public class CircleCreator : MonoBehaviour
 		return obj;
 	}
 
-	[ContextMenu ("ShowSegment")]
-	public void ShowSegment () 
-	{
-		float angle = 0;
-		float fluctFrame = 0;
-		for (int i = 0; i < ObjList.Count; i++)
-		{			
-			float radius =Volume * (RadiusLists [FluctIndex] [i] + Radius);
+//	[ContextMenu ("ShowSegment")]
+//	public void ShowSegment () 
+//	{
+//		float angle = 0;
+//		float fluctFrame = 0;
+//		for (int i = 0; i < ObjList.Count; i++)
+//		{			
+//			float radius =Volume * (RadiusLists [FluctIndex] [i] + Radius);
+//
+//			ObjList [i].transform.localPosition = new Vector3 (GetX (angle,radius), GetY (angle,radius), 0);
+//			angle += StepAngle;
+//		}
+//	}
 
-			ObjList [i].transform.localPosition = new Vector3 (GetX (angle,radius), GetY (angle,radius), 0);
-			angle += StepAngle;
+	private int GetAvailebleIndex ()
+	{
+		List <int> availebleIndex = new List<int> ();
+		for (int i = 0; i < FluctSegments.Length; i++) {
+			if (i != SecondIndex && i != FirstIndex)
+				availebleIndex.Add (i);
 		}
-	}
 
-	private List <Vector2> GetUVPoints (List <Vector3> vert)  
-	{
-		List <Vector2> uvList = new List<Vector2> ();
-		return uvList;		
-	} 
+		return availebleIndex [ Random.Range (0,availebleIndex.Count)];
+	}
 
 	private Vector2 GetUVCoord (Vector3 vertix) 
 	{
+		float x = (vertix.x - UV.LeftBottom.x)/UVbaseX;
+		float y = (vertix.y - UV.LeftBottom.y)/UVbaseY;
 		return new Vector2((vertix.x - UV.LeftBottom.x)/UVbaseX,(vertix.y - UV.LeftBottom.y)/UVbaseY);
 	}
 
@@ -222,7 +236,6 @@ public class CircleCreator : MonoBehaviour
 		public AnimationCurve FluctCurve;
 		public float FluctSpeed;
 		public float FluctOffset;
-		public int RangeMover;
 
 		private float GetFluctStep ()
 		{
@@ -232,7 +245,7 @@ public class CircleCreator : MonoBehaviour
 		public float GetFluctValue (int pointInCircle, ref float fluctFrame)
 		{
 			float value = 0;
-			if ( pointInCircle>= (Start + RangeMover) && pointInCircle <=( End  + RangeMover))
+			if ( pointInCircle>= (Start) && pointInCircle <=(End))
 			{
 				value= this.FluctOffset * FluctCurve.Evaluate (fluctFrame);
 				fluctFrame += GetFluctStep();
@@ -247,7 +260,7 @@ public class CircleCreator : MonoBehaviour
 		public float GetFluctValue (int pointInCircle, ref float fluctFrame, ref List <Vector2> uvList)
 		{
 			float value = 0;
-			if ( pointInCircle>= (Start + RangeMover) && pointInCircle <=( End  + RangeMover))
+			if ( pointInCircle>= Start && pointInCircle <= End)
 			{
 				value= this.FluctOffset * FluctCurve.Evaluate (fluctFrame);
 				fluctFrame += GetFluctStep();
@@ -264,5 +277,4 @@ public class CircleCreator : MonoBehaviour
 		public Vector2 LeftBottom;
 		public Vector2 RightTop;
 	}
-
 }
